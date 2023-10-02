@@ -1,83 +1,98 @@
-println("Hello, world!")
 
-trait Error {
-  val name: String
+/**
+ * Scala is a language where values are almost preferred to variables.
+ *
+ * val - the keyword for defining a value
+ * myValue - the name for my value
+ * :String - the type annotation, here, myValue is a String, = "Hello, world!"
+  */
+val myValue: String = "Hello, world!"
+
+/* Traits are a way to define reusable components that can be mixed into classes
+   In our case, custom errors for basketball */
+trait MyError {
   val message: String
+
+  def prettyMessage: String = s"Error: $message!"
+
 }
 
-case class BadPassError(name: String, message: String) extends Error {
-  override def toString: String = s"$message by $name!"
+// An example of a case class using trait MyError
+case class BadPassError(name: String, message: String) extends MyError {
+  override def prettyMessage: String = s"$message by $name!"
 }
 
-//def lebronJames(succeed: Boolean): Option[Error] = {
-//  println("Lebron with the pass!")
-//  if (succeed) {
-//    println("AD with the catch")
-//    None
-//  } else {
-//    Some(BadPassError("Lebron", "Bad throw"))
-//  }
-//}
-//
-//def stephCurry(lebronSucceeds: Boolean): Unit = {
-//  val nameOfScorer = lebronJames(lebronSucceeds) match {
-//    case Some(error) => {
-//      println(error)
-//      println("Curry with the catch...")
-//      "Curry"
-//    }
-//    case None => {
-//      println("No luck with the steal...")
-//      "AD"
-//    }
-//  }
-//  println(s"...and $nameOfScorer scores!")
-//}
-//
-//stephCurry(true)
-//stephCurry(false)
+// Instantiated:
+val badPassByLebron = BadPassError("Lebron", "Bad throw")
+println(badPassByLebron.prettyMessage) // "Bad throw by Lebron!"
 
+/* Let's model with types like we did before in Go...
+ ... but also take advantage of Scala's Option */
+
+/* If something is optional, that means it value may or may not exist.
+   Here we have Option[MyError], which we're using to model an optional error case.
+   If an error is present, we will get Some(value), where `value` is our error.
+   If there is no value, we will get None.
+   Think of it like a useful wrapper around a value that may or may not be there. */
+def lebronJames(succeed: Boolean): Option[MyError] = {
+  println("Lebron with the pass!")
+  if (succeed) {
+    println("AD with the catch")
+    None
+  } else {
+    Some(BadPassError("Lebron", "Bad throw"))
+  }
+}
+
+def stephCurry(lebronSucceeds: Boolean): Unit = {
+  val nameOfScorer = lebronJames(lebronSucceeds) match {
+    case Some(error) =>
+      println(error)
+      println("Curry with the catch...")
+      "Curry"
+    case None =>
+      println("No luck with the steal...")
+      "AD"
+  }
+  println(s"...and $nameOfScorer scores!")
+}
+
+stephCurry(true)
+stephCurry(false)
+
+// Okay, but this doesn't really give us much more than previously...
+
+
+// Modelling a basketball player
 trait Player {
   val name: String
-  type PassOutcome
 }
 
-trait Laker extends Player {
-  type PassOutcome = Either[Warrior, Laker]
-}
+case class Warrior(name: String) extends Player
 
-trait Warrior extends Player {
-  type PassOutcome = Either[Laker, Warrior]
-}
-
-case class AD() extends Laker {
-  val name = "AD"
-}
-
-case class Curry() extends Laker {
-  val name = "Steph"
-}
-
-case class Lebron() extends Laker {
-  val name = "Lebron"
-
-
-  def passTo(receiver: Laker, stealer: Option[Warrior] = None): PassOutcome = {
-    println(s"$name with the pass!")
+case class Laker(name: String) extends Player {
+  def passTo(player: Laker, stealer: Option[Warrior] = None): Either[Warrior, Laker] = {
+      println(s"${this.name} with the pass!")
     stealer match {
-      case Some(thief: Warrior) => Left(thief)
-      case _ => Right(receiver)
+      case Some(thief) =>
+        println(s"Intercepted by $thief!")
+        Left(thief)
+      case _ =>
+        Right(player)
     }
   }
 }
 
-val lebron = Lebron()
-val steph = Curry()
-val ant = AD()
 
-val receiver = lebron.passTo(ant)
 
-val next = receiver match {
+val anthonyDavis = Laker("AD")
+val stephenCurry = Warrior("Steph")
+val lebronJames = Laker("Lebron")
+
+val receiver1 = lebronJames.passTo(anthonyDavis, Some(stephenCurry))
+val receiver2 = lebronJames.passTo(anthonyDavis, None)
+
+val next = receiver2 match {
   case Right(scorer: Laker) => s"${scorer.name} for the Lakers!"
   case Left(scorer: Warrior) => s"${scorer.name} for the Warriors!"
 }
